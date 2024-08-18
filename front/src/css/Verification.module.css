@@ -1,0 +1,126 @@
+.errorMessage {
+  color: red;
+}
+
+
+h3,
+p {
+  text-align: center;
+  color: #333;
+}
+
+h3 {
+  font-size: 28px;
+  margin-bottom: 15px;
+  animation: fadeIn 1s ease-in-out;
+}
+
+@media (max-width: 600px) {
+  h3 {
+    margin-top: 20px;
+  }
+}
+
+p {
+  animation: fadeIn 1s ease-in-out;
+}
+
+form {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  animation: fadeInUp 1s ease-in-out;
+}
+
+label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+input[type="text"],
+input[type="file"] {
+  width: 100%;
+  margin-bottom: 20px;
+  font-size: 16px;
+  padding: 10px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: border-color 0.3s ease;
+}
+
+input[type="submit"] {
+  font-size: 16px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+
+@media screen and (max-width: 600px) {
+  form {
+    padding: 10px;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.hidden {
+  display: none;
+}
+
+.loaderContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.loader {
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #103147;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  z-index: 1000;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
