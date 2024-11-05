@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const User = require("../models/User");
+const Sheikh = require("../models/Sheikh");
 const jwt = require("jsonwebtoken");
 const path = require('path');
 const fs = require("fs");
@@ -7,12 +7,12 @@ const fs = require("fs");
 const register = async (req, res, next) => {
   const { username, phone, dob ,gender} = req.body;
   console.log(req.body)
-  if (!username || !phone || !dob  || !gender)  {
+  if (!username || !phone || !dob || !gender)  {
     res.status(400);
     return next(new Error("Please provide username, phone number , and date of birth"));
   }
 
-  const userExists = await User.findOne({ phone });
+  const userExists = await Sheikh.findOne({ phone });
 
   if (userExists) {
     res.status(400);
@@ -21,21 +21,13 @@ const register = async (req, res, next) => {
 
   try {
 
-    const user = await User.create({
+    const sheikh = await Sheikh.create({
       username,
       phone,
       dob,
       gender,
-      
     });
-    return res.status(201).json({
-      statusCode:200,
-      user: {
-        username: user.username,
-        phone: user.phone,
-       
-      },
-    });
+    generateToken(sheikh, 200, res);
   } catch (error) {
     next(error);
   }
@@ -49,22 +41,22 @@ const login = async (req, res, next) => {
     return next(new Error("Please provide username and phone"));
   }
 
-  const user = await User.findOne({ phone });
+  const sheikh = await Sheikh.findOne({ phone });
 
-  if (!user) {
+  if (!sheikh) {
     res.status(400);
     return next(new Error("User does not exists"));
   }
 
   try {
-    const isMatch=username===user.username?true:false;
+    const isMatch=username===sheikh.username?true:false;
 
     if (!isMatch) {
       res.status(400);
       return next(new Error("User and phone does not match"));
     }
 
-    generateToken(user, 200, res);
+    generateToken(sheikh, 200, res);
   } catch (error) {
     next(error);
   }
@@ -84,22 +76,22 @@ const getUserByToken = async (req, res, next) => {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      const user = await User.findById(decoded.id);
-      generateToken(user, 200, res);
+      const sheikh = await Sheikh.findById(decoded.id);
+      generateToken(sheikh, 200, res);
     } catch (error) {
       console.log(error);
       next(error);
     }
   }
 };
-const generateToken = (user, statusCode, res) => {
-  const token = user.getSignedToken();
+const generateToken = (sheikh, statusCode, res) => {
+  const token = sheikh.getSignedToken();
   return res.status(statusCode).json({
     token,
     statusCode:200,
     user: {
-      username: user.username,
-      phone: user.phone,
+      username: sheikh.username,
+      phone: sheikh.phone,
     },
   });
 };

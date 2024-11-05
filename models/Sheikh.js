@@ -4,15 +4,10 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const Schema = mongoose.Schema;
 
-const userSchema = new Schema({
+const sheikhSchema = new Schema({
   username: {
     type: String,
     required: [true,'username should be written'],
-  },
-  gender:{
-    type:String,
-    required:[true,'you must provide your gender'],
-    enum:['M','F'],
   },
   phone: {
     type: String,
@@ -37,16 +32,19 @@ const userSchema = new Schema({
       return new Date(value);
     }
   },
+  gender:{
+    type:String,
+    required:[true,'you must provide your gender'],
+    enum:['M','F'],
+  }
 }, {
   timestamps: true, 
   toJSON: { getters: true }, 
   toObject: { getters: true }, 
 });
 
-userSchema.methods.getSignedToken = function () {
-  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: "10h",
-  });
+sheikhSchema.methods.getSignedToken = function () {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET);
 };
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model("Sheikh", sheikhSchema);
