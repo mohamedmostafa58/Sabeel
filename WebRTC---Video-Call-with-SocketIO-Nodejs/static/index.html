@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/assets/logo.png" type="image/png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Video Call</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+    <script src='/socket.io/socket.io.js'></script>
+    <script>
+        let myName;
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <div id="userName" class="user-name">
+            <div class="input-container">
+                <input placeholder="What should we call you?" type="text" id="userNameInput">
+                <button onclick="login()" class="action-button">Login</button>
+            </div>
+        </div>
+
+        <div id="userInfo" class="user-info">
+            <h1>Hello, <span id="nameHere"></span></h1>
+        </div>
+        <div id="connectedUsers" class="connected-users">
+            <h2>Connected Users</h2>
+            <ul id="userList"></ul>
+        </div>
+        <!-- <div id="call" class="call">
+            <div class="dial-wrapper">
+                <input placeholder="Whom to call?" type="text" id="callName">
+                <div class="dial-numpad-wrapper">
+                    <div class="dial-number"></div>
+                    <div class="dial-number">
+                        <button class="dial-action-button" onclick="videoCall()"><i class="fa-solid fa-video"></i></button>
+                        <button class="dial-action-button" onclick="voiceCall()"><i class="fa fa-phone"></i></button>
+                    </div>
+                    <div class="dial-number"></div>
+                </div>
+            </div>
+        </div> -->
+
+        <div id="answer" class="answer">
+            <div class="incoming-wrapper">
+                <h2>Incoming Call</h2>
+                <img id="profileImageA" src="/assets/profile.png" alt="">
+                <h2 id="callerName"></h2>
+                <div class="button-container">
+                    <button id='answerVoice' class="action-button" onclick="answerVoice()">Answer</button>
+                    <button id='answerVideo' class="action-button" onclick="answerVideo()">Answer</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="calling" class="calling">
+            <div class="incoming-wrapper">
+                <h2>Calling</h2>
+                <img id="profileImageCA" src="/assets/profile.png" alt="">
+                <h3 id="otherUserNameCA"></h3>
+            </div>
+        </div>
+
+        <div id="inCall" class="in-call">
+            <div class="incoming-wrapper">
+                <h3>On Call With</h3>
+                <h2 id="otherUserNameC"></h2>
+            </div>
+        </div>
+
+        <div id="videos" class="videos">
+            <div class="local-video">
+                <video id="localVideo" autoplay muted playsinline></video>
+            </div>
+            <div id="remoteVideoDiv" class="remote-video">
+                <video id="remoteVideo" autoplay playsinline></video>
+            </div>
+        </div>
+
+        <div class="call-controls">
+            <button id="endVideoButton" onclick="stop()">End Call</button>
+            <button id="toggleAudio" onclick="toggleAudio()">Mute</button>
+            <button id="toggleVideo" onclick="toggleVideo()">Turn Off Video</button>
+        </div>
+    </div>
+
+
+    <script src="/assets/call.js"></script>
+    <script>
+        // document.getElementById("call").style.display = "none";
+        document.getElementById("userInfo").style.display = "none";
+        document.getElementById("answer").style.display = "none";
+        document.getElementById("answerVoice").style.display = "none";
+        document.getElementById("answerVideo").style.display = "none";
+        document.getElementById("inCall").style.display = "none";
+        document.getElementById("calling").style.display = "none";
+        document.getElementById("videos").style.display = "none";
+        document.getElementById("endVideoButton").style.display = "none";
+        document.getElementById("toggleAudio").style.display = "none";
+        document.getElementById("toggleVideo").style.display = "none";
+
+        function login() {
+            let userName = document.getElementById("userNameInput").value;
+            myName = userName;
+            document.getElementById("userName").style.display = "none";
+            // document.getElementById("call").style.display = "block";
+
+            document.getElementById("nameHere").innerHTML = userName;
+            document.getElementById("userInfo").style.display = "block";
+
+            connectSocket();
+        }
+    </script>
+</body>
+
+</html>
