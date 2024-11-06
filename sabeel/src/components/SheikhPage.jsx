@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
 const SOCKET_SERVER_URL = 'https://deversecrypto.live';
@@ -9,6 +9,163 @@ const SheikhPage = ({username,handleLogout}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate=useNavigate();
+  const [isCalling, setIsCalling] = useState(false);
+  const [callAccepted, setCallAccepted] = useState(false);
+  const [callee,setCallee]=useState("");
+  const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
+  const peerConnection = useRef(null);
+  const ringtone=useRef(null);
+  const ringtoneTimeout=useRef(null);
+  //handle call 
+  const pcConfig = {
+    iceServers: [
+        {
+            urls: 'stun:stun.deversecrypto.live:3478',
+        },
+        {
+            urls: 'turn:turn.deversecrypto.live:3478',
+            username: 'tanta',
+            credential: 'tantawy58',
+        },
+    ],
+};
+const sdpConstraints = {
+  offerToReceiveAudio: true,
+  offerToReceiveVideo: true
+};
+
+  const videoConstraints = {
+    video: {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30, max: 60 },
+        facingMode: 'user'
+    },
+    audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: 48000,
+        sampleSize: 16,
+        latency: 0, 
+        channelCount: 1
+    }
+};
+
+  function call(name) {
+    setIsCalling(true)
+    setCallee(name);
+    beReady(videoConstraints)
+        .then(bool => {
+            processCall(name, 'video')
+        }
+      )}
+  function beReady(constrains) {
+    return navigator.mediaDevices.getUserMedia(constrains)
+        .then(stream => {
+          localStreamRef.current.srcObject = stream;
+          localStreamRef.current.autoplay = true;
+          localStreamRef.current.muted = true;
+            return createConnectionAndAddStream();
+        })
+        .catch(e => {
+            console.log(e);
+        });
+}
+function createConnectionAndAddStream() {
+  createPeerConnection();
+  peerConnection.current.addStream(localStreamRef.current);
+  return true;
+}
+function createPeerConnection() {
+  try {
+      peerConnection = new RTCPeerConnection(pcConfig, {
+          optional: [{ RtpDataChannels: false }],
+      });
+      peerConnection.current.onicecandidate = handleIceCandidate;
+      peerConnection.current.onaddstream = handleRemoteStreamAdded;
+      peerConnection.current.onremovestream = handleRemoteStreamRemoved;
+      console.log('Created RTCPeerConnection');
+  } catch (e) {
+      console.error('Failed to create PeerConnection:', e);
+  }
+}
+// window.onbeforeunload = function () {
+//   if (callInProgress) {
+//       stop();
+//   }
+// };
+function handleRemoteStreamAdded(event) {
+  remoteStream = event.stream;
+  remoteVideo.srcObject = remoteStream;
+  remoteVideo.autoplay = true;
+}
+
+function handleRemoteStreamRemoved(event) {
+  remoteVideo.srcObject = null;
+  localVideo.srcObject = null;
+}
+function handleIceCandidate(event) {
+  if (event.candidate) {
+      sendICEcandidate({
+          user: callee,
+          rtcMessage: {
+              label: event.candidate.sdpMLineIndex,
+              id: event.candidate.sdpMid,
+              candidate: event.candidate.candidate
+          }
+      });
+  } else {
+      console.log('End of candidates.');
+  }
+}
+function sendICEcandidate(data) {
+  socket.emit("ICEcandidate", data);
+}
+function processCall(userName, callType) {
+  peerConnection.current.createOffer().then((sessionDescription) => {
+      sessionDescription.sdp = setMediaBitrates(sessionDescription.sdp);
+      peerConnection.setLocalDescription(sessionDescription);
+      sendCall({
+          name: userName,
+          rtcMessage: sessionDescription,
+          type: callType
+      });
+  }).catch((error) => {
+      console.error("Error creating offer:", error);
+  });
+}
+function setMediaBitrates(sdp) {
+  return sdp.replace(/(m=video.*\r\n)/g, '$1b=AS:2000\r\n')
+      .replace(/(m=audio.*\r\n)/g, '$1b=AS:128\r\n');
+}
+function sendCall(data) {
+  socket.emit("call", data);
+  // document.getElementById("otherUserNameCA").innerHTML = otherUser;
+  // document.getElementById("calling").style.display = "block";
+  playRingtone();
+}
+function playRingtone() {
+  ringtone = new Audio('ringtone.mp3');
+  ringtone.current.loop = true;
+  ringtone.current.play();
+
+  ringtoneTimeout = setTimeout(() => {
+      stopRingtone();
+  }, 15000);
+}
+  function stopRingtone() {
+    if (ringtone.current) {
+        ringtone.current.pause();
+        ringtone.current.currentTime = 0;
+        ringtone.current=null
+    }
+    if (ringtoneTimeout.current) {
+        clearTimeout(ringtoneTimeout.current);
+        ringtoneTimeout.current=null
+    }
+}
   // Fetch students from the API
 const fetchStudents = async () => {
   try {
@@ -42,7 +199,19 @@ useEffect(() => {
   socket.on('connectedUsersUpdated', (connectedUsers) => {
     setStudents(connectedUsers);
   });
+  socket.on('ICEcandidate', data => {
+    let message = data.rtcMessage;
+    let candidate = new RTCIceCandidate({
+        sdpMLineIndex: message.label,
+        candidate: message.candidate
+    });
 
+    if (peerConnection) {
+        peerConnection.addIceCandidate(candidate);
+    } else {
+        iceCandidatesFromCaller.push(candidate);
+    }
+});
   // Cleanup on unmount
   return () => {
     socket.off('connectedUsersUpdated');
@@ -60,11 +229,18 @@ useEffect(() => {
       }}  className="fixed top-4 right-4 bg-red-500 text-white py-2 px-4 rounded shadow hover:bg-red-800 transition duration-200">تسجيل الخروج</button>
       {/* Left Call Section */}
       <aside className="bg-indigo-50 flex flex-col items-center p-6 w-1/2">
-        <h2 className="text-2xl font-semibold text-indigo-900 mb-4">الاتصال</h2>
-        <div className="bg-white/80 rounded-lg shadow-inner w-full h-full flex items-center justify-center">
-          <p className="text-slate-600 text-lg">واجهة الاتصال هنا</p>
-        </div>
-      </aside>
+          <h2 className="text-2xl font-semibold text-indigo-900 mb-4">الاتصال</h2>
+          <div className="bg-white/80 rounded-lg shadow-inner w-full h-full flex items-center justify-center">
+            {isCalling || callAccepted ? (
+              <div className="video-container">
+                <video ref={localStreamRef} autoPlay playsInline muted className="local-video" />
+                <video ref={remoteStreamRef} autoPlay playsInline className="remote-video" />
+              </div>
+            ) : (
+              <p className="text-slate-600 text-lg">واجهة الاتصال هنا</p>
+            )}
+          </div>
+        </aside>
 
       {/* Right Content Section */}
       <div className="flex-1 bg-white p-8 text-right rtl">
@@ -115,7 +291,10 @@ useEffect(() => {
 
                   {/* Call Button */}
                   <div className="w-full">
-                    <button className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700 transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center justify-center gap-2">
+                    <button  onClick={()=>{
+                      call(student.name)
+                    }}
+                    className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700 transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center justify-center gap-2">
                       <Phone size={18} className="inline-block" />
                       <span>بدء الاتصال</span>
                     </button>
